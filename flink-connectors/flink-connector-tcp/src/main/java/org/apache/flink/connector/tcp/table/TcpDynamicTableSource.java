@@ -32,12 +32,15 @@ import org.apache.flink.table.connector.source.ScanTableSource;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.types.DataType;
 
+import javax.annotation.Nullable;
+
 /** Reads delimited records from a TCP server it connects to, with a parallelism of 1. */
 public final class TcpDynamicTableSource implements ScanTableSource {
 
     private final String hostname;
     private final int port;
     private final byte byteDelimiter;
+    @Nullable private final String sourceName;
     private final DecodingFormat<DeserializationSchema<RowData>> decodingFormat;
     private final DataType producedDataType;
 
@@ -45,11 +48,13 @@ public final class TcpDynamicTableSource implements ScanTableSource {
             String hostname,
             int port,
             byte byteDelimiter,
+            @Nullable String sourceName,
             DecodingFormat<DeserializationSchema<RowData>> decodingFormat,
             DataType producedDataType) {
         this.hostname = hostname;
         this.port = port;
         this.byteDelimiter = byteDelimiter;
+        this.sourceName = sourceName;
         this.decodingFormat = decodingFormat;
         this.producedDataType = producedDataType;
     }
@@ -69,7 +74,8 @@ public final class TcpDynamicTableSource implements ScanTableSource {
                         decodingFormat.createRuntimeDecoder(
                                 runtimeProviderContext, producedDataType);
                 return execEnv.fromSource(
-                                new TcpSource(hostname, port, byteDelimiter, deserializer),
+                                new TcpSource(
+                                        hostname, port, byteDelimiter, sourceName, deserializer),
                                 WatermarkStrategy.noWatermarks(),
                                 "TcpSource")
                         .setParallelism(1);
@@ -85,7 +91,7 @@ public final class TcpDynamicTableSource implements ScanTableSource {
     @Override
     public DynamicTableSource copy() {
         return new TcpDynamicTableSource(
-                hostname, port, byteDelimiter, decodingFormat, producedDataType);
+                hostname, port, byteDelimiter, sourceName, decodingFormat, producedDataType);
     }
 
     @Override

@@ -38,12 +38,16 @@ import org.apache.flink.table.data.RowData;
 import org.apache.flink.util.Preconditions;
 import org.apache.flink.util.UserCodeClassLoader;
 
+import javax.annotation.Nullable;
+
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -63,16 +67,19 @@ public final class TcpSource
     private final String hostname;
     private final int port;
     private final byte byteDelimiter;
+    @Nullable private final String sourceName;
     private final DeserializationSchema<RowData> deserializer;
 
     public TcpSource(
             String hostname,
             int port,
             byte byteDelimiter,
+            @Nullable String sourceName,
             DeserializationSchema<RowData> deserializer) {
         this.hostname = hostname;
         this.port = port;
         this.byteDelimiter = byteDelimiter;
+        this.sourceName = sourceName;
         this.deserializer = deserializer;
     }
 
@@ -166,6 +173,11 @@ public final class TcpSource
                     socket.connect(new InetSocketAddress(hostname, port), 0);
                     buffer = new ByteArrayOutputStream();
                     stream = new BufferedInputStream(socket.getInputStream(), 1 << 16);
+                    if (sourceName != null) {
+                        OutputStream out = socket.getOutputStream();
+                        out.write((sourceName + "\n").getBytes(StandardCharsets.UTF_8));
+                        out.flush();
+                    }
                 } catch (Throwable t) {
                     socket = null;
                     try {

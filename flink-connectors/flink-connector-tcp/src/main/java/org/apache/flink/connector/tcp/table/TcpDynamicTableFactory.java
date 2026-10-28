@@ -50,6 +50,13 @@ public final class TcpDynamicTableFactory
                     .defaultValue(10)
                     .withDescription("Source record delimiter; the default is '\\n'.");
 
+    public static final ConfigOption<String> SOURCE_NAME =
+            ConfigOptions.key("source-name")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription(
+                            "If set, the source writes this name and a newline after connecting.");
+
     public static final ConfigOption<Long> FLUSH_INTERVAL_MS =
             ConfigOptions.key("flush-interval-ms")
                     .longType()
@@ -68,7 +75,7 @@ public final class TcpDynamicTableFactory
 
     @Override
     public Set<ConfigOption<?>> optionalOptions() {
-        return Set.of(FactoryUtil.FORMAT, BYTE_DELIMITER, FLUSH_INTERVAL_MS);
+        return Set.of(FactoryUtil.FORMAT, BYTE_DELIMITER, SOURCE_NAME, FLUSH_INTERVAL_MS);
     }
 
     @Override
@@ -84,6 +91,7 @@ public final class TcpDynamicTableFactory
                 options.get(HOSTNAME),
                 options.get(PORT),
                 (byte) (int) options.get(BYTE_DELIMITER),
+                options.get(SOURCE_NAME),
                 decodingFormat,
                 context.getCatalogTable().getResolvedSchema().toPhysicalRowDataType());
     }
